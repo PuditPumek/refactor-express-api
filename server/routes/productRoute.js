@@ -1,27 +1,12 @@
-import express from "express";
-import cors from "cors";
-import { client, db } from "./utils/db.js";
 import { ObjectId } from "mongodb";
-import { productRoute } from "./routes/productRoute.js";
+import { db } from "../db/connect.js"; 
+import { Router } from "express";
+import { validateProduct } from "../middlewares/productValidation.js";
 
-const init = async () => {
-  await client.connect();
-  const app = express();
-  const port = 4001;
 
-  // `cors` เป็น Middleware ที่ทำให้ Client ใดๆ ตามที่กำหนด
-  // สามารถสร้าง Request มาหา Server เราได้
-  // ในโค้ดบรรทัดล่างนี้คือให้ Client ไหนก็ได้สามารถสร้าง Request มาหา Server ได้
-  app.use(cors());
+const productRoute = Router();
 
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  app.use("/products", productRoute);
-  
-
-  
-  // Products routes
-  app.get("/products", async (req, res) => {
+productRoute.get("/", async (req, res) => {
     try {
       const name = req.query.keywords;
       const category = req.query.category;
@@ -40,7 +25,7 @@ const init = async () => {
     }
   });
 
-  app.get("/products/:id", async (req, res) => {
+productRoute.get("/:id", async (req, res) => {
     try {
       const collection = db.collection("products");
       const productId = new ObjectId(req.params.id);
@@ -53,7 +38,7 @@ const init = async () => {
     }
   });
 
-  app.post("/products", async (req, res) => {
+productRoute.post("/", [validateProduct], async (req, res) => {
     try {
       const collection = db.collection("products");
       const productData = { ...req.body, created_at: new Date() };
@@ -66,7 +51,7 @@ const init = async () => {
     }
   });
 
-  app.put("/products/:id", async (req, res) => {
+productRoute.put("/:id", [validateProduct], async (req, res) => {
     try {
       const collection = db.collection("products");
       const newProductData = { ...req.body, modified_at: new Date() };
@@ -81,7 +66,7 @@ const init = async () => {
     }
   });
 
-  app.delete("/products/:id", async (req, res) => {
+productRoute.delete("/:id", async (req, res) => {
     try {
       const collection = db.collection("products");
       const productId = new ObjectId(req.params.id);
@@ -96,12 +81,5 @@ const init = async () => {
     }
   });
 
-  app.get("/", (req, res) => {
-    res.send("Hello World!");
-  });
+export { productRoute };
 
-  app.listen(port, () => {
-    console.log(`Server is running at port ${port}`);
-  });
-};
-init();
